@@ -1,0 +1,35 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go workspace file
+go.work
+
+# Dependency directories
+vendor/
+bin/
+pkg/
+
+# IDE-specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment files
+.env
+
+# Log files
+*.log
+
+# Build output
+dist/
+build/
+
+# Ignore the binary of your project
+my-bot
