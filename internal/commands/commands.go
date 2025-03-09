@@ -2,5 +2,6 @@ package commands
 
 const (
     Start        = "/start"
-    Confirm       = "Подтверждаю"
+		Begin        = "Начать"
+    Confirm      = "Подтверждаю"
 )
