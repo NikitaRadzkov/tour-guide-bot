@@ -3,9 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"tour-guide-bot/internal/bot"
 	"tour-guide-bot/internal/config"
 
@@ -42,8 +39,4 @@ func main() {
 	}
 
 	botInstance.Start()
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
 }
