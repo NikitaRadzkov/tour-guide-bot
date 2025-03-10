@@ -44,11 +44,15 @@ func (b *Bot) Start() {
 				b.handleUnknownCommand(update.Message)
 			}
 		} else if update.CallbackQuery != nil {
+			if update.CallbackQuery.From.ID == b.bot.Self.ID {
+				continue
+			}
+
 			switch update.CallbackQuery.Data {
 			case commands.Begin:
-				b.handleBegin(update.CallbackQuery.Message)
+				b.handleBegin(update.CallbackQuery)
 			case commands.Confirm:
-				b.handleConfirmation(update.CallbackQuery.Message)
+				b.handleConfirmation(update.CallbackQuery)
 			default:
 				log.Printf("Unknown callback data: %s\n", update.CallbackQuery.Data)
 			}
@@ -75,43 +79,48 @@ func (b *Bot) handleStart(message *tgbotapi.Message) {
 	b.bot.Send(msg)
 }
 
-func (b *Bot) handleConfirmation(message *tgbotapi.Message) {
-	isSubscribed, err := b.isUserSubscribed(message.Chat.ID)
+func (b *Bot) handleConfirmation(callbackQuery *tgbotapi.CallbackQuery) {
+	userID := callbackQuery.From.ID
+
+	isSubscribed, err := b.isUserSubscribed(userID)
 	if err != nil {
 		log.Printf("Failed to check subscribe: %v", err)
-		msg := tgbotapi.NewMessage(message.Chat.ID, "Возникла ошибка при проверки подписки! 😞")
-
+		msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "Возникла ошибка при проверке подписки! 😞")
 		b.bot.Send(msg)
 		return
 	}
 
 	if isSubscribed {
-		msg := tgbotapi.NewMessage(message.Chat.ID, "Отлично! 🎉\nГайд ваш.\nНажмите на кнопку ниже для скачивания.\nПриятной поездки!")
-
+		msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "Отлично! 🎉\nГайд ваш.\nНажмите на кнопку ниже для скачивания.\nПриятной поездки!")
 		inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
-				tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonURL("Скачать гайд", b.guideUrl),
 			),
 		)
-
 		msg.ReplyMarkup = inlineKeyboard
-
-		if _, err := b.bot.Send(msg); err != nil {
-			log.Printf("Failed to send message: %v\n", err)
-		}
-} else {
-		msg := tgbotapi.NewMessage(message.Chat.ID, "Увы, я не вижу вашей подписки. Попробуйте еще раз 😉")
+		b.bot.Send(msg)
+	} else {
+		msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "Увы, я не вижу вашей подписки. Пожалуйста, подпишитесь на канал, нажав кнопку ниже, и затем нажмите «Подтверждаю» 😉.")
+		inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL("Подписаться на канал", "https://t.me/agentveratravel"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Подтверждаю", commands.Confirm),
+			),
+		)
+		msg.ReplyMarkup = inlineKeyboard
 		b.bot.Send(msg)
 	}
 }
 
-func (b *Bot) handleBegin(message *tgbotapi.Message) {
-	msg := tgbotapi.NewMessage(message.Chat.ID, "Чтобы получить гайд 🇮🇹 «Рим за два дня» — идеальный маршрут, топовые локации и секретные места?\n \n 1️⃣ Подпишитесь на мой канал https://t.me/agentveratravel (без подписки бот не выдаст гайд).\n\n 2️⃣ Нажмите на кнопку  «Подтверждаю»")
+func (b *Bot) handleBegin(callbackQuery *tgbotapi.CallbackQuery) {
+	msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "Чтобы получить гайд 🇮🇹 «Рим за два дня» — идеальный маршрут, топовые локации и секретные места?\n \n 1️⃣ Подпишитесь на мой канал https://t.me/agentveratravel (без подписки бот не выдаст гайд).\n\n 2️⃣ Нажмите на кнопку  «Подтверждаю»")
 
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("Подтверждаю", commands.Confirm),
-	),
+			tgbotapi.NewInlineKeyboardButtonData("Подтверждаю", commands.Confirm),
+		),
 	)
 
 	msg.ReplyMarkup = inlineKeyboard
@@ -119,13 +128,11 @@ func (b *Bot) handleBegin(message *tgbotapi.Message) {
 	b.bot.Send(msg)
 }
 
-
 func (b *Bot) isUserSubscribed(userID int64) (bool, error) {
-	chatID , err := b.getChatIDByUsername(b.channelName)
+	chatID, err := b.getChatIDByUsername(b.channelName)
 	if err != nil {
 		return false, fmt.Errorf("failed to get ChatID: %v", err)
 	}
-
 
 	chatMember, err := b.bot.GetChatMember(tgbotapi.GetChatMemberConfig{
 		ChatConfigWithUser: tgbotapi.ChatConfigWithUser{
@@ -134,18 +141,26 @@ func (b *Bot) isUserSubscribed(userID int64) (bool, error) {
 		},
 	})
 	if err != nil {
+		log.Printf("Failed to get chat member status: %v\n", err)
 		return false, err
 	}
 
-	return chatMember.IsMember || chatMember.IsAdministrator() || chatMember.IsCreator(), nil
+	switch chatMember.Status {
+	case "member", "administrator", "creator":
+		return true, nil
+	default:
+		return false, nil
+	}
 }
 
 func (b *Bot) getChatIDByUsername(username string) (int64, error) {
+	log.Printf("username: %v", username)
 	chat, err := b.bot.GetChat(tgbotapi.ChatInfoConfig{
 		ChatConfig: tgbotapi.ChatConfig{
 			SuperGroupUsername: username,
 		},
 	})
+
 	if err != nil {
 		return 0, err
 	}
