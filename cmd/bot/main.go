@@ -18,14 +18,14 @@ func main() {
 	}
 
 	go func() {
-		http.HandleFunc("/kaithheathcheck", func(w http.ResponseWriter, r *http.Request) {
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("OK"))
 		})
 
 		port := cfg.Port
 
-		log.Printf("Starting health-check server on port %s", port)
+		log.Printf("Starting server on port %s", port)
 		if err := http.ListenAndServe(":"+port, nil); err != nil {
 			log.Fatalf("Failed to start health-check server: %v", err)
 		}
