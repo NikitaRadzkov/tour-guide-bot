@@ -154,7 +154,6 @@ func (b *Bot) isUserSubscribed(userID int64) (bool, error) {
 }
 
 func (b *Bot) getChatIDByUsername(username string) (int64, error) {
-	log.Printf("username: %v", username)
 	chat, err := b.bot.GetChat(tgbotapi.ChatInfoConfig{
 		ChatConfig: tgbotapi.ChatConfig{
 			SuperGroupUsername: username,
