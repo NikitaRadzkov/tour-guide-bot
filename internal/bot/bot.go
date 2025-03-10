@@ -17,6 +17,7 @@ type Bot struct {
 func NewBot(token, channelName, guideUrl string) (*Bot, error) {
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
+		log.Printf("Failed to init new bot: %v", err)
 		return nil, err
 	}
 

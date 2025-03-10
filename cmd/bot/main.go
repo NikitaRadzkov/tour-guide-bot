@@ -20,7 +20,6 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	// Запуск HTTP-сервера для health-check
 	go func() {
 		http.HandleFunc("/kaithheathcheck", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -34,6 +33,8 @@ func main() {
 			log.Fatalf("Failed to start health-check server: %v", err)
 		}
 	}()
+
+	log.Printf("Prepare bot...")
 
 	botInstance, err := bot.NewBot(cfg.TelegramToken, cfg.ChannelName, cfg.GuideUrl)
 	if err != nil {
