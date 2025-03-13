@@ -118,7 +118,7 @@ func (b *Bot) handleConfirmation(callbackQuery *tgbotapi.CallbackQuery) {
 }
 
 func (b *Bot) handleBegin(callbackQuery *tgbotapi.CallbackQuery) {
-	msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "Чтобы получить гайд 🇮🇹 «Рим за два дня» — идеальный маршрут, топовые локации и секретные места?\n \n 1️⃣ Подпишитесь на мой канал https://t.me/agentveratravel (без подписки бот не выдаст гайд).\n\n 2️⃣ Нажмите на кнопку  «Подтверждаю»")
+	msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "Чтобы получить гайд 🇮🇹 «Рим за два дня» — идеальный маршрут, топовые локации и секретные места:\n \n 1️⃣ Подпишитесь на мой канал https://t.me/agentveratravel (без подписки бот не выдаст гайд)\n\n 2️⃣ Нажмите на кнопку  «Подтверждаю»")
 
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
