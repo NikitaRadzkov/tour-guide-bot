@@ -32,7 +32,6 @@ Create a `.env` file in the root of the project and add the following variables:
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 TELEGRAM_CHANNEL_NAME=@your_channel_name
 GUIDE_URL=https://your_google_drive_link
-PORT=8080
 ```
 
 3. **Install dependencies**:

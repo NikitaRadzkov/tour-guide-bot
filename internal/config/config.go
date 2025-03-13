@@ -28,15 +28,9 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("GUIDE_URL is not set")
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		return nil, fmt.Errorf("PORT is not set")
-	}
-
 	return &Config{
 		TelegramToken: token,
 		ChannelName: channelName,
 		GuideUrl: guideUrl,
-		Port: port,
 	}, nil
 }
