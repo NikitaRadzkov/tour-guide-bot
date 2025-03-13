@@ -66,7 +66,10 @@ func (b *Bot) Start() {
 }
 
 func (b *Bot) handleStart(message *tgbotapi.Message) {
-	msg := tgbotapi.NewMessage(message.Chat.ID, "Привет! 👋\nЭтот бот поможет вам получить мои лучшие путеводители и полезные материалы. Нажмите кнопку «Начать», чтобы запустить!")
+	msg := tgbotapi.NewMessage(message.Chat.ID, "Привет! 👋\n" + 
+	"Этот бот Веры Агеенковой.\n" +
+	"Он поможет вам получить мои лучшие путеводители и полезные материалы для ваших путешествий. Нажмите кнопку «Начать», чтобы запустить! ⬇️",
+)
 
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
@@ -100,10 +103,10 @@ func (b *Bot) handleConfirmation(callbackQuery *tgbotapi.CallbackQuery) {
 		msg.ReplyMarkup = inlineKeyboard
 		b.bot.Send(msg)
 	} else {
-		msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "Увы, я не вижу вашей подписки. Пожалуйста, подпишитесь на канал, нажав кнопку ниже, и затем нажмите «Подтверждаю» 😉.")
+		msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "Увы, я не вижу вашей подписки. Попробуйте  еще раз😉")
 		inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonURL("Подписаться на канал", "https://t.me/agentveratravel"),
+				tgbotapi.NewInlineKeyboardButtonURL("Подписаться", "https://t.me/agentveratravel"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Подтверждаю", commands.Confirm),
