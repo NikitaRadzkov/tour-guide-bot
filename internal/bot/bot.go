@@ -3,27 +3,37 @@ package bot
 import (
 	"fmt"
 	"log"
-	"tour-guide-bot/internal/commands"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Bot struct {
-	bot *tgbotapi.BotAPI
+	bot         *tgbotapi.BotAPI
 	channelName string
-	guideUrl string
+	guideUrl    string
+	topDealsUrl string
+	checklistUrl string
+	searchUrl   string
+	aboutUrl    string
+	contactUser string
 }
 
-func NewBot(token, channelName, guideUrl string) (*Bot, error) {
+func NewBot(token, channelName, guideUrl, topDealsUrl, checklistUrl, searchUrl, aboutUrl, contactUser string) (*Bot, error) {
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Bot{
-		bot: bot,
+		bot:         bot,
 		channelName: channelName,
-		guideUrl: guideUrl,
+		guideUrl:    guideUrl,
+		topDealsUrl: topDealsUrl,
+		checklistUrl: checklistUrl,
+		searchUrl:   searchUrl,
+		aboutUrl:    aboutUrl,
+		contactUser: contactUser,
 	}, nil
 }
 
@@ -37,139 +47,280 @@ func (b *Bot) Start() {
 
 	for update := range updates {
 		if update.Message != nil {
-			switch update.Message.Text {
-			case commands.Start:
-				b.handleStart(update.Message)
-			default:
-				b.handleUnknownCommand(update.Message)
+			if update.Message.IsCommand() {
+				switch update.Message.Command() {
+				case "start":
+					b.handleStart(update.Message)
+				default:
+					b.handleUnknownCommand(update.Message)
+				}
+			} else {
+				b.handleTextMessage(update.Message)
 			}
 		} else if update.CallbackQuery != nil {
-			if update.CallbackQuery.From.ID == b.bot.Self.ID {
-				continue
-			}
-
-			switch update.CallbackQuery.Data {
-			case commands.Begin:
-				b.handleBegin(update.CallbackQuery)
-			case commands.Confirm:
-				b.handleConfirmation(update.CallbackQuery)
-			default:
-				log.Printf("Unknown callback data: %s\n", update.CallbackQuery.Data)
-			}
-
-			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
-			if _, err := b.bot.Request(callback); err != nil {
-				log.Printf("Failed to answer callback: %v\n", err)
-			}
+			b.handleCallbackQuery(update.CallbackQuery)
 		}
 	}
 }
 
 func (b *Bot) handleStart(message *tgbotapi.Message) {
-	msg := tgbotapi.NewMessage(message.Chat.ID, "Привет! 👋\n" + 
-	"Этот бот Веры Агеенковой.\n" +
-	"Он поможет вам получить мои лучшие путеводители и полезные материалы для ваших путешествий. Нажмите кнопку «Начать», чтобы запустить! ⬇️",
-)
+	text := `Привет! Это многофункциональный бот Веры Агеенковой ✨
 
-	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Начать", commands.Begin),
+Помогаю найти идеальный отдых, без 100500 отзывов и мук выбора.
+Здесь ты можешь забрать 🎁, посмотреть топ-предложения, подобрать тур и связаться со мной по любому вопросу.
+
+Выбирай ниже 👇`
+
+	msg := tgbotapi.NewMessage(message.Chat.ID, text)
+
+	keyboard := tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("🎁 Забрать подарок"),
+			tgbotapi.NewKeyboardButton("💥 Топ 3 предложения недели"),
+		),
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("📋 Чек-лист на подбор тура"),
+			tgbotapi.NewKeyboardButton("🔎 Поиск тура"),
+		),
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("ℹ️ Обо мне"),
+			tgbotapi.NewKeyboardButton("💬 Связаться со мной"),
 		),
 	)
 
-	msg.ReplyMarkup = inlineKeyboard
-
+	msg.ReplyMarkup = keyboard
 	b.bot.Send(msg)
 }
 
-func (b *Bot) handleConfirmation(callbackQuery *tgbotapi.CallbackQuery) {
-	userID := callbackQuery.From.ID
+func (b *Bot) handleTextMessage(message *tgbotapi.Message) {
+	switch message.Text {
+	case "🎁 Забрать подарок":
+		b.handleGift(message)
+	case "💥 Топ 3 предложения недели":
+		b.handleTopDeals(message)
+	case "📋 Чек-лист на подбор тура":
+		b.handleChecklist(message)
+	case "🔎 Поиск тура":
+		b.handleSearch(message)
+	case "ℹ️ Обо мне":
+		b.handleAbout(message)
+	case "💬 Связаться со мной":
+		b.handleContact(message)
+	default:
+		b.handleUnknownCommand(message)
+	}
+}
 
-	isSubscribed, err := b.isUserSubscribed(userID)
+func (b *Bot) handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) {
+	switch callbackQuery.Data {
+	case "check_subscription":
+		b.handleSubscriptionCheck(callbackQuery)
+	default:
+		log.Printf("Unknown callback data: %s\n", callbackQuery.Data)
+	}
+
+	callback := tgbotapi.NewCallback(callbackQuery.ID, "")
+	if _, err := b.bot.Request(callback); err != nil {
+		log.Printf("Failed to answer callback: %v\n", err)
+	}
+}
+
+func (b *Bot) handleGift(message *tgbotapi.Message) {
+	msg := tgbotapi.NewMessage(message.Chat.ID, "")
+	
+	isSubscribed, err := b.isUserSubscribed(message.From.ID)
 	if err != nil {
-		log.Printf("Failed to check subscribe: %v", err)
-		msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "Возникла ошибка при проверке подписки! 😞")
+		log.Printf("Failed to check subscription: %v", err)
+		msg.Text = "Произошла ошибка при проверке подписки. Пожалуйста, попробуйте позже."
 		b.bot.Send(msg)
 		return
 	}
 
 	if isSubscribed {
-		msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "Отлично! 🎉\nГайд ваш.\nНажмите на кнопку ниже для скачивания.\nПриятной поездки!")
-		inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
+		msg.Text = "🎉 Отлично! Вот твой подарок."
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonURL("Скачать гайд", b.guideUrl),
+				tgbotapi.NewInlineKeyboardButtonURL("📥 Скачать гайд", b.guideUrl),
 			),
 		)
-		msg.ReplyMarkup = inlineKeyboard
-		b.bot.Send(msg)
+		msg.ReplyMarkup = keyboard
 	} else {
-		msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "Увы, я не вижу вашей подписки. Попробуйте  еще раз😉")
-		inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
+		msg.Text = "Увы, я не вижу твою подписку."
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonURL("Подписаться", "https://t.me/agentveratravel"),
+				tgbotapi.NewInlineKeyboardButtonURL("🔄 Подписаться", fmt.Sprintf("https://t.me/%s", strings.TrimPrefix(b.channelName, "@"))),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Подтверждаю", commands.Confirm),
+				tgbotapi.NewInlineKeyboardButtonData("✅ Я подписался", "check_subscription"),
 			),
 		)
-		msg.ReplyMarkup = inlineKeyboard
-		b.bot.Send(msg)
+		msg.ReplyMarkup = keyboard
 	}
-}
-
-func (b *Bot) handleBegin(callbackQuery *tgbotapi.CallbackQuery) {
-	msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "Чтобы получить гайд 🇮🇹 «Рим за два дня» — идеальный маршрут, топовые локации и секретные места:\n \n 1️⃣ Подпишитесь на мой канал https://t.me/agentveratravel (без подписки бот не выдаст гайд)\n\n 2️⃣ Нажмите на кнопку «Подтверждаю»")
-
-	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Подтверждаю", commands.Confirm),
-		),
-	)
-
-	msg.ReplyMarkup = inlineKeyboard
 
 	b.bot.Send(msg)
+}
+
+func (b *Bot) handleTopDeals(message *tgbotapi.Message) {
+	msg := tgbotapi.NewMessage(message.Chat.ID, "")
+	
+	isSubscribed, err := b.isUserSubscribed(message.From.ID)
+	if err != nil {
+		log.Printf("Failed to check subscription: %v", err)
+		msg.Text = "Произошла ошибка при проверке подписки. Пожалуйста, попробуйте позже."
+		b.bot.Send(msg)
+		return
+	}
+
+	if isSubscribed {
+		msg.Text = "🔥 Топ предложения, подобранные лично мной:"
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL("👉 Посмотреть предложения", b.topDealsUrl),
+			),
+		)
+		msg.ReplyMarkup = keyboard
+	} else {
+		msg.Text = "Увы, я не вижу твою подписку."
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL("🔄 Подписаться", fmt.Sprintf("https://t.me/%s", strings.TrimPrefix(b.channelName, "@"))),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("✅ Я подписался", "check_subscription"),
+			),
+		)
+		msg.ReplyMarkup = keyboard
+	}
+
+	b.bot.Send(msg)
+}
+
+func (b *Bot) handleChecklist(message *tgbotapi.Message) {
+	text := `Хочешь, чтобы тур был «ВАУ»?
+
+Заполни мини-анкету — и я предложу 2-3 варианта, от которых сложно отказаться 😎`
+
+	msg := tgbotapi.NewMessage(message.Chat.ID, text)
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("✅ Заполнить", b.checklistUrl),
+		),
+	)
+	msg.ReplyMarkup = keyboard
+	b.bot.Send(msg)
+}
+
+func (b *Bot) handleSearch(message *tgbotapi.Message) {
+	text := `🏖 Если любишь искать сам — пользуйся поисковиком на моем сайте:
+
+1. Выбирай тур
+2. Напиши мне номер тура
+3. Я забронирую`
+
+	msg := tgbotapi.NewMessage(message.Chat.ID, text)
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("Искать тур", b.searchUrl),
+		),
+	)
+	msg.ReplyMarkup = keyboard
+	b.bot.Send(msg)
+}
+
+func (b *Bot) handleAbout(message *tgbotapi.Message) {
+	text := `👩‍💼 Меня зовут Вера Агеенкова. Я турагент, тревел-эксперт, и та, кто превращает мечты в брони, ваш путеводитель в мир отдыха без лишней суеты.✈️
+🌍Подробнее обо мне и стиле моей работы — на сайте.`
+
+	msg := tgbotapi.NewMessage(message.Chat.ID, text)
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("Узнать", b.aboutUrl),
+		),
+	)
+	msg.ReplyMarkup = keyboard
+	b.bot.Send(msg)
+}
+
+func (b *Bot) handleContact(message *tgbotapi.Message) {
+	text := `📩 Есть вопрос? Пиши прямо мне в Telegram — я на связи!`
+
+	msg := tgbotapi.NewMessage(message.Chat.ID, text)
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("👉 Написать", fmt.Sprintf("https://t.me/%s", strings.TrimPrefix(b.contactUser, "@"))),
+		),
+	)
+	msg.ReplyMarkup = keyboard
+	b.bot.Send(msg)
+}
+
+func (b *Bot) handleSubscriptionCheck(callbackQuery *tgbotapi.CallbackQuery) {
+	isSubscribed, err := b.isUserSubscribed(callbackQuery.From.ID)
+	if err != nil {
+		log.Printf("Failed to check subscription: %v", err)
+		msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "Произошла ошибка при проверке подписки. Пожалуйста, попробуйте позже.")
+		b.bot.Send(msg)
+		return
+	}
+
+	if isSubscribed {
+		msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "🎉 Отлично! Теперь ты подписан, вот твой подарок!")
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL("📥 Скачать гайд", b.guideUrl),
+			),
+		)
+		msg.ReplyMarkup = keyboard
+		b.bot.Send(msg)
+	} else {
+		msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "Кажется, ты еще не подписался. Пожалуйста, подпишись на канал и попробуй снова.")
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL("🔄 Подписаться", fmt.Sprintf("https://t.me/%s", strings.TrimPrefix(b.channelName, "@"))),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("✅ Я подписался", "check_subscription"),
+			),
+		)
+		msg.ReplyMarkup = keyboard
+		b.bot.Send(msg)
+	}
 }
 
 func (b *Bot) isUserSubscribed(userID int64) (bool, error) {
 	chatID, err := b.getChatIDByUsername(b.channelName)
 	if err != nil {
-		return false, fmt.Errorf("failed to get ChatID: %v", err)
+			return false, fmt.Errorf("failed to get chat ID: %v", err)
 	}
 
 	chatMember, err := b.bot.GetChatMember(tgbotapi.GetChatMemberConfig{
-		ChatConfigWithUser: tgbotapi.ChatConfigWithUser{
-			ChatID: chatID,
-			UserID: userID,
-		},
+			ChatConfigWithUser: tgbotapi.ChatConfigWithUser{
+					ChatID: chatID,
+					UserID: userID,
+			},
 	})
 	if err != nil {
-		log.Printf("Failed to get chat member status: %v\n", err)
-		return false, err
+			return false, err
 	}
 
-	switch chatMember.Status {
-	case "member", "administrator", "creator":
-		return true, nil
-	default:
-		return false, nil
-	}
+	return chatMember.Status == "member" || 
+				 chatMember.Status == "administrator" || 
+				 chatMember.Status == "creator", nil
 }
 
 func (b *Bot) getChatIDByUsername(username string) (int64, error) {
 	chat, err := b.bot.GetChat(tgbotapi.ChatInfoConfig{
-		ChatConfig: tgbotapi.ChatConfig{
-			SuperGroupUsername: username,
-		},
+			ChatConfig: tgbotapi.ChatConfig{
+					SuperGroupUsername: username,
+			},
 	})
-
 	if err != nil {
-		return 0, err
+			return 0, err
 	}
 	return chat.ID, nil
 }
 
 func (b *Bot) handleUnknownCommand(message *tgbotapi.Message) {
-	msg := tgbotapi.NewMessage(message.Chat.ID, "Неизвестная команда. Пожалуйста, используйте /start для начала.")
+	msg := tgbotapi.NewMessage(message.Chat.ID, "Неизвестная команда. Пожалуйста, используйте кнопки меню для навигации.")
 	b.bot.Send(msg)
 }

@@ -18,7 +18,16 @@ func main() {
 
 	log.Printf("Prepare bot...")
 
-	botInstance, err := bot.NewBot(cfg.TelegramToken, cfg.ChannelName, cfg.GuideUrl)
+	botInstance, err := bot.NewBot(
+		cfg.TelegramToken,
+		cfg.ChannelName,
+		cfg.GuideUrl,
+		cfg.TopDealUrl,
+		cfg.ChecklistUrl,
+		cfg.SearchUrl,
+		cfg.AboutUrl,
+		cfg.ContactUser, 
+	)
 	if err != nil {
 		log.Fatalf("Failed to init bot: %v", err)
 	}
