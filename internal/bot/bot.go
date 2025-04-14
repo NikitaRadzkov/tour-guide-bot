@@ -64,10 +64,10 @@ func (b *Bot) Start() {
 }
 
 func (b *Bot) handleStart(message *tgbotapi.Message) {
-	text := `Привет! Это многофункциональный бот Веры Агеенковой ✨
+	text := `Привет! Это многофункциональный бот Веры Агеенковой ✨  
 
-Помогаю найти идеальный отдых, без 100500 отзывов и мук выбора.
-Здесь ты можешь забрать 🎁, посмотреть топ-предложения, подобрать тур и связаться со мной по любому вопросу.
+Организую ваш отдых «как на облачке» в лучшем соотношение «цена-качество».
+Здесь ты можешь забрать бесплатный 🎁, посмотреть 🔝 выгодных предложений, подобрать тур или связаться со мной лично. 
 
 Выбирай ниже 👇`
 
@@ -76,7 +76,7 @@ func (b *Bot) handleStart(message *tgbotapi.Message) {
 	keyboard := tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("🎁 Забрать подарок"),
-			tgbotapi.NewKeyboardButton("💥 Топ 3 предложения недели"),
+			tgbotapi.NewKeyboardButton("🔝 3 предложения недели"),
 		),
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("📋 Чек-лист на подбор тура"),
@@ -88,6 +88,9 @@ func (b *Bot) handleStart(message *tgbotapi.Message) {
 		),
 	)
 
+	keyboard.OneTimeKeyboard = false
+	keyboard.ResizeKeyboard = true
+
 	msg.ReplyMarkup = keyboard
 	b.bot.Send(msg)
 }
@@ -96,7 +99,7 @@ func (b *Bot) handleTextMessage(message *tgbotapi.Message) {
 	switch message.Text {
 	case "🎁 Забрать подарок":
 		b.handleGift(message)
-	case "💥 Топ 3 предложения недели":
+	case "🔝 3 предложения недели":
 		b.handleTopDeals(message)
 	case "📋 Чек-лист на подбор тура":
 		b.handleChecklist(message)
@@ -172,7 +175,7 @@ func (b *Bot) handleTopDeals(message *tgbotapi.Message) {
 	}
 
 	if isSubscribed {
-		msg.Text = "🔥 Топ предложения, подобранные лично мной:"
+		msg.Text = "🔝 выгодных предложений этой недели, подобранных лично мной:"
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonURL("👉 Посмотреть предложения", b.topDealsUrl),
@@ -196,9 +199,9 @@ func (b *Bot) handleTopDeals(message *tgbotapi.Message) {
 }
 
 func (b *Bot) handleChecklist(message *tgbotapi.Message) {
-	text := `Хочешь, чтобы тур был «ВАУ»?
+	text := `Если вы цените индивидуальный подход и внимание к деталям, для вас важны качество и высокий уровень сервиса
 
-Заполни мини-анкету — и я предложу 2-3 варианта, от которых сложно отказаться 😎`
+Заполни чек-лист на подбор тура — и я предложу варианты, подходящие именно вам.`
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
@@ -211,16 +214,16 @@ func (b *Bot) handleChecklist(message *tgbotapi.Message) {
 }
 
 func (b *Bot) handleSearch(message *tgbotapi.Message) {
-	text := `🏖 Если любишь искать сам — пользуйся поисковиком на моем сайте:
+	text := `🏖 Если вы любите выбирать самостоятельно или уже знаете отель — воспользуйтесь формой поиска тура на сайте:
 
 1. Выбирай тур
-2. Напиши мне номер тура
-3. Я забронирую`
+2. Напиши мне детали и стоимость 
+3. Мы актуализируем цену и наличие мест и забронируем отдых`
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("Искать тур", b.searchUrl),
+			tgbotapi.NewInlineKeyboardButtonURL("🔎 Искать тур", b.searchUrl),
 		),
 	)
 	msg.ReplyMarkup = keyboard
@@ -228,8 +231,10 @@ func (b *Bot) handleSearch(message *tgbotapi.Message) {
 }
 
 func (b *Bot) handleAbout(message *tgbotapi.Message) {
-	text := `👩‍💼 Меня зовут Вера Агеенкова. Я турагент, тревел-эксперт, и та, кто превращает мечты в брони, ваш путеводитель в мир отдыха без лишней суеты.✈️
-🌍Подробнее обо мне и стиле моей работы — на сайте.`
+	text := `👩‍💼 Меня зовут Вера Агеенкова. 
+Я турагент, эксперт с 12-летним опытом, та, кто превращает ваши мечты в бронирования и делает «конфетку» из ваших «хочу».
+
+🌍Подробнее обо мне и что я делаю для вас — на сайте.`
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
@@ -242,7 +247,7 @@ func (b *Bot) handleAbout(message *tgbotapi.Message) {
 }
 
 func (b *Bot) handleContact(message *tgbotapi.Message) {
-	text := `📩 Есть вопрос? Пиши прямо мне в Telegram — я на связи!`
+	text := `📩 Есть вопросы? Пиши прямо мне в Telegram — я на связи!`
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
@@ -290,32 +295,32 @@ func (b *Bot) handleSubscriptionCheck(callbackQuery *tgbotapi.CallbackQuery) {
 func (b *Bot) isUserSubscribed(userID int64) (bool, error) {
 	chatID, err := b.getChatIDByUsername(b.channelName)
 	if err != nil {
-			return false, fmt.Errorf("failed to get chat ID: %v", err)
+		return false, fmt.Errorf("failed to get chat ID: %v", err)
 	}
 
 	chatMember, err := b.bot.GetChatMember(tgbotapi.GetChatMemberConfig{
-			ChatConfigWithUser: tgbotapi.ChatConfigWithUser{
-					ChatID: chatID,
-					UserID: userID,
-			},
+		ChatConfigWithUser: tgbotapi.ChatConfigWithUser{
+			ChatID: chatID,
+			UserID: userID,
+		},
 	})
 	if err != nil {
-			return false, err
+		return false, err
 	}
 
 	return chatMember.Status == "member" || 
-				 chatMember.Status == "administrator" || 
-				 chatMember.Status == "creator", nil
+	       chatMember.Status == "administrator" || 
+	       chatMember.Status == "creator", nil
 }
 
 func (b *Bot) getChatIDByUsername(username string) (int64, error) {
 	chat, err := b.bot.GetChat(tgbotapi.ChatInfoConfig{
-			ChatConfig: tgbotapi.ChatConfig{
-					SuperGroupUsername: username,
-			},
+		ChatConfig: tgbotapi.ChatConfig{
+			SuperGroupUsername: username,
+		},
 	})
 	if err != nil {
-			return 0, err
+		return 0, err
 	}
 	return chat.ID, nil
 }
