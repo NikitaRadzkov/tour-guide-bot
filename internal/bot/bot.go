@@ -64,10 +64,10 @@ func (b *Bot) Start() {
 }
 
 func (b *Bot) handleStart(message *tgbotapi.Message) {
-	text := `Привет! Это многофункциональный бот Веры Агеенковой ✨  
+	text := `Привет! Это многофункциональный бот Веры Агеенковой ✨
 
 Организую ваш отдых «как на облачке» в лучшем соотношение «цена-качество».
-Здесь ты можешь забрать бесплатный 🎁, посмотреть 🔝 выгодных предложений, подобрать тур или связаться со мной лично. 
+Здесь ты можешь забрать бесплатный 🎁, посмотреть 🔝 выгодных предложений, подобрать тур или связаться со мной лично.
 
 Выбирай ниже 👇`
 
@@ -76,7 +76,6 @@ func (b *Bot) handleStart(message *tgbotapi.Message) {
 	keyboard := tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("🎁 Забрать подарок"),
-			tgbotapi.NewKeyboardButton("🔝 3 предложения недели"),
 		),
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("📋 Чек-лист на подбор тура"),
@@ -99,8 +98,6 @@ func (b *Bot) handleTextMessage(message *tgbotapi.Message) {
 	switch message.Text {
 	case "🎁 Забрать подарок":
 		b.handleGift(message)
-	case "🔝 3 предложения недели":
-		b.handleTopDeals(message)
 	case "📋 Чек-лист на подбор тура":
 		b.handleChecklist(message)
 	case "🔎 Поиск тура":
@@ -130,7 +127,7 @@ func (b *Bot) handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) {
 
 func (b *Bot) handleGift(message *tgbotapi.Message) {
 	msg := tgbotapi.NewMessage(message.Chat.ID, "")
-	
+
 	isSubscribed, err := b.isUserSubscribed(message.From.ID)
 	if err != nil {
 		log.Printf("Failed to check subscription: %v", err)
@@ -165,7 +162,7 @@ func (b *Bot) handleGift(message *tgbotapi.Message) {
 
 func (b *Bot) handleTopDeals(message *tgbotapi.Message) {
 	msg := tgbotapi.NewMessage(message.Chat.ID, "")
-	
+
 	isSubscribed, err := b.isUserSubscribed(message.From.ID)
 	if err != nil {
 		log.Printf("Failed to check subscription: %v", err)
@@ -217,7 +214,7 @@ func (b *Bot) handleSearch(message *tgbotapi.Message) {
 	text := `🏖 Если вы любите выбирать самостоятельно или уже знаете отель — воспользуйтесь формой поиска тура на сайте:
 
 1. Выбирай тур
-2. Напиши мне детали и стоимость 
+2. Напиши мне детали и стоимость
 3. Мы актуализируем цену и наличие мест и забронируем отдых`
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
@@ -231,7 +228,7 @@ func (b *Bot) handleSearch(message *tgbotapi.Message) {
 }
 
 func (b *Bot) handleAbout(message *tgbotapi.Message) {
-	text := `👩‍💼 Меня зовут Вера Агеенкова. 
+	text := `👩‍💼 Меня зовут Вера Агеенкова.
 Я турагент, эксперт с 12-летним опытом, та, кто превращает ваши мечты в бронирования и делает «конфетку» из ваших «хочу».
 
 🌍Подробнее обо мне и что я делаю для вас — на сайте.`
@@ -308,8 +305,8 @@ func (b *Bot) isUserSubscribed(userID int64) (bool, error) {
 		return false, err
 	}
 
-	return chatMember.Status == "member" || 
-	       chatMember.Status == "administrator" || 
+	return chatMember.Status == "member" ||
+	       chatMember.Status == "administrator" ||
 	       chatMember.Status == "creator", nil
 }
 
